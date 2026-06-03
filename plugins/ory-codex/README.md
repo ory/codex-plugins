@@ -64,6 +64,10 @@ Codex surfaces the skill catalog in `/skills` and auto-invokes by description. A
 - **`ory-login-flow`** — login, registration, recovery, verification, and settings pages with Ory Elements. Next.js App Router and React SPA variants.
 - **`ory-social-login`** — Google, GitHub, Apple, Microsoft, Discord, and other OIDC providers with Jsonnet data mappers.
 - **`ory-local-dev`** — drive the local Ory stack from within Codex to prototype and test without a remote project.
+- **`ory-permissions-onboarding`** — bootstrap permission tuples for built-in tools, switch between observe and enforce mode, troubleshoot denials.
+- **`ory-build-integration`** — pull the runnable subset of an `ory/integrates` template (webhook / config / http-event) into your own app and wire it to your Ory project — no contribution/registry concerns.
+- **`ory-contribute-integration`** — author a brand-new integration as a contribution to `ory/integrates`, including `registry.entry.yaml`, the `Maintained by:` footer, DCO sign-off, and registry regeneration.
+- **`ory-e2b-sandbox`** — scaffold an [E2B](https://e2b.dev) sandbox template that boots with this plugin preinstalled and registered, so every sandbox session is gated by Ory auth, permissions, and tracing without any per-sandbox setup.
 
 ### Ory MCP server
 
