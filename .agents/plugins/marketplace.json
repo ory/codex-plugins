@@ -1,0 +1,19 @@
+{
+  "name": "ory",
+  "interface": {
+    "displayName": "Ory"
+  },
+  "plugins": [
+    {
+      "name": "ory-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ory-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Security"
+    }
+  ]
+}

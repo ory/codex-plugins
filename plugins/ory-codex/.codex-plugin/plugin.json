@@ -1,0 +1,39 @@
+{
+  "name": "ory-codex",
+  "version": "0.5.0",
+  "description": "Ory authentication, authorization, and audit for every Codex tool call.",
+  "author": {
+    "name": "Ory",
+    "url": "https://ory.com"
+  },
+  "homepage": "https://ory.com",
+  "repository": "https://github.com/ory/ory-agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "ory",
+    "authentication",
+    "authorization",
+    "permissions",
+    "audit",
+    "oauth2",
+    "zanzibar"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Ory",
+    "shortDescription": "Authn/authz and audit for every Codex tool call",
+    "longDescription": "Adds Ory Identities, Permissions, and audit logging to Codex. Auth gate on session start, per-tool permission checks before every invocation, structured trace spans on every decision, and a bundled Ory MCP server for managing identities, OAuth2 clients, and permission tuples from inside Codex.",
+    "developerName": "Ory",
+    "category": "Security",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://ory.com",
+    "privacyPolicyURL": "https://www.ory.sh/privacy-policy",
+    "termsOfServiceURL": "https://www.ory.sh/tos",
+    "defaultPrompt": [
+      "Scaffold Ory auth into this app, or grant me 'use' on a tool"
+    ]
+  }
+}

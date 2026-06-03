@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "@ory/mcp-server@0.5.0",
+        "ory-mcp-server"
+      ]
+    }
+  }
+}
