@@ -20,15 +20,13 @@ npx @ory/codex install     # registers the Ory marketplace + plugin with `codex`
 npx @ory/codex uninstall   # removes both
 ```
 
-Under the hood the installer runs `codex plugin marketplace add <local-dir>` and `codex plugin add ory-codex@ory`, so the plugin is owned by Codex's plugin system — same as every other Codex marketplace plugin. Skills, slash commands, hooks, and the Ory MCP server are all part of the plugin payload. Re-running `install` is idempotent and refreshes the rendered skills + commands from the latest template.
-
-Verify the install with Codex's native tooling:
+Then confirm everything landed:
 
 ```bash
-codex plugin list      # shows ory-codex@ory installed + enabled
-codex mcp list         # shows the bundled `ory` MCP server
-codex doctor           # surfaces any config or MCP resolvability issues
+npx -y -p @ory/codex ory-codex status
 ```
+
+`status` is the single source of truth — it prints configuration, user and agent identity, per-tool permission coverage, plugin + skill registration, and a tail of recent debug logs. Unconfigured fields show inline as `(unset)`.
 
 ## Quickstart (≈ 3 minutes)
 
