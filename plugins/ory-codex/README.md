@@ -66,6 +66,8 @@ Codex surfaces the skill catalog in `/skills` and auto-invokes by description. A
 - **`ory-build-integration`** — pull the runnable subset of an `ory/integrates` template (webhook / config / http-event) into your own app and wire it to your Ory project — no contribution/registry concerns.
 - **`ory-contribute-integration`** — author a brand-new integration as a contribution to `ory/integrates`, including `registry.entry.yaml`, the `Maintained by:` footer, DCO sign-off, and registry regeneration.
 - **`ory-e2b-sandbox`** — scaffold an [E2B](https://e2b.dev) sandbox template that boots with this plugin preinstalled and registered, so every sandbox session is gated by Ory auth, permissions, and tracing without any per-sandbox setup.
+- **`ory-build-agent`** — drop `@ory/argus` directly into a custom agent you own (Claude Agent SDK, OpenAI Agents SDK, Mastra, Vercel AI SDK, PydanticAI, LangGraph, Mistral AI, or Salesforce Agentforce) so the user is authenticated, every tool call is authorized against Ory Permissions, and the lifecycle emits trace spans.
+- **`ory-temporal-worker`** — scaffold a [Temporal](https://temporal.io) TypeScript worker per the [official local-dev guide](https://docs.temporal.io/develop/typescript/set-up-your-local-typescript), with every Activity gated by an Ory permission check, the worker's agent identity resolved via DCR, and the full lifecycle emitting trace spans.
 
 ### Ory MCP server
 
@@ -78,6 +80,7 @@ From Codex's `/skills` menu:
 ```
 ory-local-up      # start a local Ory instance in Docker
 ory-local-down    # tear it all down
+ory-temporal-up   # start a local Temporal dev server (for ory-temporal-worker)
 ```
 
 Or via the CLI: `npx -y -p @ory/codex ory-codex local up | down`.
