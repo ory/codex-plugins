@@ -42,13 +42,13 @@ From any project where you'd like Ory authentication, inside Codex:
 
 3. **Sign in.** Start your app, visit the login page Codex added, and sign in with the seeded credentials. You now have a real Ory session backed by a real Ory stack — locally, offline, with zero configuration.
 
-4. **Turn on Ory login for the Codex session itself.** *(Optional but recommended.)* Out of the box the plugin only governs your *app*. To also attach an Ory identity to *Codex's* session — so every tool call is attributed to you, not a fallback `session:<id>` subject — set:
+4. **Turn on Ory login for the Codex session itself.** *(Optional but recommended.)* Out of the box the plugin only governs your *app*. To also attach an Ory identity to *Codex's* session — so every tool call is attributed to you, not a fallback `session:<id>` subject — opt in to the user-login flow:
 
    ```bash
-   export ORY_AUTH_GATE=1
+   export ORY_USER_LOGIN=1
    ```
 
-   Then restart Codex. On next session start, Codex opens an Ory login in your browser; sign in with the same seeded credentials from step 1. This is what makes `permissions enforce` (see [Agent security](#agent-security)) deny on the right identity later.
+   User login is off by default. With it on, the next Codex session opens an Ory login in your browser; sign in with the same seeded credentials from step 1, and the token is reused on subsequent sessions until it expires. This is what makes `permissions enforce` (see [Agent security](#agent-security)) deny on the right identity later.
 
 That's the full Ory DX path. Stop here if you're just evaluating the plugin. Continue to [Agent security](#agent-security) when you're ready to enforce.
 
@@ -107,7 +107,7 @@ Without configuration the plugin still loads cleanly and runs in **pass-through 
 
 Once the plugin is pointed at an Ory project (local or hosted), Codex's session and every tool call can be governed by Ory.
 
-- **Authentication.** Two identities. The human at the keyboard (the **user**) authenticates interactively via Ory Identities when `ORY_AUTH_GATE=1` is set. The Codex process (the **agent**) gets its own OAuth2 identity, self-registered via [Dynamic Client Registration (RFC 7591)](https://datatracker.ietf.org/doc/html/rfc7591) on first run.
+- **Authentication.** Two identities. The human at the keyboard (the **user**) authenticates interactively via Ory Identities when user login is enabled (`ORY_USER_LOGIN=1`, off by default — browser PKCE flow on first session, persisted token thereafter). The Codex process (the **agent**) gets its own OAuth2 identity, self-registered via [Dynamic Client Registration (RFC 7591)](https://datatracker.ietf.org/doc/html/rfc7591) on first run.
 - **Authorization.** Before any tool runs, the plugin checks [Ory Permissions](https://www.ory.com/docs/keto) (Zanzibar-style relation tuples) against the user's subject and blocks the call on `deny`. MCP tool calls additionally get a server-level check.
 - **Audit.** Every decision (allow, deny, fallback) is recorded as a structured trace span: NDJSON file output and/or OTLP/HTTP export to Jaeger, Honeycomb, Grafana, and similar collectors. The user → agent delegation is written to Ory as a relation tuple so *"agent X acting on behalf of user Y"* stays queryable after tokens expire.
 
@@ -117,10 +117,10 @@ The plugin is **fail-open** on its own infrastructure failures (network errors, 
 
 After install the plugin runs in **observe mode**: every tool call is checked against Ory Permissions, but a deny is recorded as a `permission.observe_deny` audit span and the tool runs anyway. This lets you see what *would* be blocked before turning on hard blocking.
 
-1. **Turn on the user gate.** In your shell:
+1. **Turn on user login.** It's off by default. In your shell:
 
    ```bash
-   export ORY_AUTH_GATE=1
+   export ORY_USER_LOGIN=1
    ```
 
    The next Codex session opens a browser for PKCE login. Subsequent sessions reuse the persisted token until it expires.
