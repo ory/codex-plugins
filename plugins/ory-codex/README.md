@@ -45,10 +45,11 @@ From any project where you'd like Ory authentication, inside Codex:
 4. **Turn on Ory login for the Codex session itself.** *(Optional but recommended.)* Out of the box the plugin only governs your *app*. To also attach an Ory identity to *Codex's* session — so every tool call is attributed to you, not a fallback `session:<id>` subject — opt in to the user-login flow:
 
    ```bash
-   export ORY_USER_LOGIN=1
+   export ORY_USER_LOGIN=true
+   export ORY_OAUTH2_CLIENT_ID=<value printed by `local up`>
    ```
 
-   User login is off by default. With it on, the next Codex session opens an Ory login in your browser; sign in with the same seeded credentials from step 1, and the token is reused on subsequent sessions until it expires. This is what makes `permissions enforce` (see [Agent security](#agent-security)) deny on the right identity later.
+   User login is off by default. Both exports above are printed in the `local up` banner — copy them straight from there. `ORY_OAUTH2_CLIENT_ID` is required whenever `ORY_USER_LOGIN` is on: it identifies the public OAuth2 client the PKCE browser flow exchanges for a token. With both set, the next Codex session opens an Ory login in your browser; sign in with the same seeded credentials from step 1, and the token is reused on subsequent sessions until it expires. This is what makes `permissions enforce` (see [Agent security](#agent-security)) deny on the right identity later.
 
 That's the full Ory DX path. Stop here if you're just evaluating the plugin. Continue to [Agent security](#agent-security) when you're ready to enforce.
 
@@ -94,23 +95,80 @@ Or via the CLI: `npx -y -p @ory/codex ory-codex local up | down`.
 
 ## Pointing at a real Ory project
 
-The Quickstart uses the local stack. If you have a hosted [Ory Network](https://console.ory.sh) project, point the plugin at it:
+The Quickstart uses the local stack. If you have a hosted [Ory Network](https://console.ory.sh) project, point the plugin at it with a single configure command. **The plugin requires `--oauth2-client-id` whenever `--project-url` is provided** — register the client first (see [Register the user OAuth2 client](#register-the-user-oauth2-client) below), then run:
 
 ```bash
 npx -y -p @ory/codex ory-codex configure \
   --project-url https://<id>.projects.oryapis.com \
-  --api-key ory_pat_...
+  --oauth2-client-id <public OAuth2 client id>
 ```
+
+- **`--project-url`** points the plugin at your project. The **agent identity** (machine credentials for Codex's outgoing Ory API calls) is created automatically on first run via OAuth2 Dynamic Client Registration ([RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)) against the project's `/oauth2/register` endpoint — no manual step required for that one.
+- **`--oauth2-client-id`** is required because the **user** PKCE browser flow (triggered by `ORY_USER_LOGIN=true`) cannot self-register — you must register a public OAuth2 client ahead of time and supply its id here. The configure command refuses to save a project URL without it, so you don't end up with a silently-broken setup later. See [Register the user OAuth2 client](#register-the-user-oauth2-client) below for the exact CLI / Console steps.
+- **`--api-key ory_pat_...`** is optional — pass it only if you want to override the auto-registered agent identity with a static personal access token (operator override; rarely needed).
+
+If you only want audit logging (no auth or permission checks), substitute `--audit-only` — the OAuth2 client id is not required in that mode:
+
+```bash
+npx -y -p @ory/codex ory-codex configure --audit-only
+```
+
+The same settings can be supplied via environment variables (`ORY_PROJECT_URL`, `ORY_OAUTH2_CLIENT_ID`, `ORY_AGENT_API_KEY`) — env vars take precedence over the config file when both are set, which is what most CI / scripted setups want.
 
 Config is saved to `~/.config/ory-agent-plugins/config.json` and shared across every Ory agent plugin on the machine.
 
 Without configuration the plugin still loads cleanly and runs in **pass-through mode**: skills work, but nothing is blocked. You can stay in pass-through mode indefinitely if you only want the DX features.
 
+### Register the user OAuth2 client
+
+If you plan to turn on `ORY_USER_LOGIN=true` (recommended — it's what attributes every tool call to *you* rather than a fallback `session:<id>` subject), your hosted Ory project needs a **public** OAuth2 client (no client secret) registered ahead of time. The local stack provisions this for you automatically; against a hosted project you have to register it once yourself.
+
+The client must list **all four** loopback ports as redirect URIs:
+
+- `http://127.0.0.1:47823/callback`
+- `http://127.0.0.1:47824/callback`
+- `http://127.0.0.1:47825/callback`
+- `http://127.0.0.1:47826/callback`
+
+The plugin walks the four ports at runtime so the login can survive any one of them being occupied — Ory rejects the callback if the port it lands on isn't on the registered list, so register all four.
+
+Create the client with the [Ory CLI](https://www.ory.com/docs/guides/cli/installation):
+
+```bash
+ory create oauth2-client --project <project-id> \
+  --name "ory-agent-plugin" \
+  --grant-type authorization_code,refresh_token \
+  --response-type code \
+  --scope openid,offline_access \
+  --token-endpoint-auth-method none \
+  --redirect-uri http://127.0.0.1:47823/callback \
+  --redirect-uri http://127.0.0.1:47824/callback \
+  --redirect-uri http://127.0.0.1:47825/callback \
+  --redirect-uri http://127.0.0.1:47826/callback
+```
+
+…or in the [Ory Console](https://console.ory.sh) under *OAuth2* → *Clients* → *Create client* (pick "Public client", set "Authorization Code" + "Refresh Token" grants, scopes `openid offline_access`, paste the four redirect URIs above). Then persist the issued id with the configure command (preferred — survives across sessions):
+
+```bash
+npx -y -p @ory/codex ory-codex configure \
+  --project-url https://<id>.projects.oryapis.com \
+  --oauth2-client-id <client-id from the step above>
+```
+
+…or set it in the environment alongside `ORY_USER_LOGIN`:
+
+```bash
+export ORY_USER_LOGIN=true
+export ORY_OAUTH2_CLIENT_ID=<client-id from the step above>
+```
+
+Headless / CI runs that already hold a session token can skip this entirely by setting `ORY_USER_SESSION_TOKEN` instead — no browser flow runs, so no OAuth2 client is needed.
+
 ## Agent security
 
 Once the plugin is pointed at an Ory project (local or hosted), Codex's session and every tool call can be governed by Ory.
 
-- **Authentication.** Two identities. The human at the keyboard (the **user**) authenticates interactively via Ory Identities when user login is enabled (`ORY_USER_LOGIN=1`, off by default — browser PKCE flow on first session, persisted token thereafter). The Codex process (the **agent**) gets its own OAuth2 identity, self-registered via [Dynamic Client Registration (RFC 7591)](https://datatracker.ietf.org/doc/html/rfc7591) on first run.
+- **Authentication.** Two identities. The human at the keyboard (the **user**) authenticates interactively via Ory Identities when user login is enabled (`ORY_USER_LOGIN=true`, off by default — browser PKCE flow on first session, persisted token thereafter). The Codex process (the **agent**) gets its own OAuth2 identity, self-registered via [Dynamic Client Registration (RFC 7591)](https://datatracker.ietf.org/doc/html/rfc7591) on first run.
 - **Authorization.** Before any tool runs, the plugin checks [Ory Permissions](https://www.ory.com/docs/keto) (Zanzibar-style relation tuples) against the user's subject and blocks the call on `deny`. MCP tool calls additionally get a server-level check.
 - **Audit.** Every decision (allow, deny, fallback) is recorded as a structured trace span: NDJSON file output and/or OTLP/HTTP export to Jaeger, Honeycomb, Grafana, and similar collectors. The user → agent delegation is written to Ory as a relation tuple so *"agent X acting on behalf of user Y"* stays queryable after tokens expire.
 
@@ -123,10 +181,13 @@ After install the plugin runs in **observe mode**: every tool call is checked ag
 1. **Turn on user login.** It's off by default. In your shell:
 
    ```bash
-   export ORY_USER_LOGIN=1
+   export ORY_USER_LOGIN=true
+   export ORY_OAUTH2_CLIENT_ID=<public OAuth2 client id>
    ```
 
    The next Codex session opens a browser for PKCE login. Subsequent sessions reuse the persisted token until it expires.
+
+   `ORY_OAUTH2_CLIENT_ID` is required when `ORY_USER_LOGIN` is on: PKCE needs a public OAuth2 client registered with the four loopback redirect URIs (`http://127.0.0.1:47823..47826/callback`) to exchange the authorization code for a token. The local stack provisions one and prints the export in its `local up` banner; for a hosted Ory project see [Register the user OAuth2 client](#register-the-user-oauth2-client) for the exact CLI / Console steps. Headless / CI runs can skip the browser flow entirely by pre-supplying `ORY_USER_SESSION_TOKEN` instead.
 
 2. **Bootstrap tuples for the built-in tools.** One idempotent command grants the current user `use` on every tool Codex ships with (shell, apply_patch, …):
 
@@ -156,7 +217,7 @@ After install the plugin runs in **observe mode**: every tool call is checked ag
 
 ```
 npx -y -p @ory/codex ory-codex install | uninstall
-npx -y -p @ory/codex ory-codex configure                            [--project-url <url>] [--api-key <key>] [--audit-only]
+npx -y -p @ory/codex ory-codex configure                            [--project-url <url> --oauth2-client-id <id>] [--api-key <key>] [--audit-only]
 npx -y -p @ory/codex ory-codex agent <status|unregister>            Manage the agent's OAuth2 identity
 npx -y -p @ory/codex ory-codex permissions <status|bootstrap|observe|enforce>
 npx -y -p @ory/codex ory-codex local <up|down|status|seed|logs|env|configure|reset>
