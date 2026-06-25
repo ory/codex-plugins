@@ -4,6 +4,20 @@
 
 You don't need an Ory account or any prior Ory experience to start.
 
+## New to Ory?
+
+[Ory](https://www.ory.com/docs/) is an open-source identity and access platform — it provides login, registration, sessions, social sign-in, multi-factor auth, and fine-grained permissions, so you don't have to build any of that yourself. Two things make it easy to try with no prior experience:
+
+- **Ory Elements** are prebuilt, themeable UI components for the auth pages (login, registration, recovery, settings). The scaffolding skills wire them into your app for you.
+- **The local Ory stack** is a complete Ory running on your laptop in Docker — no account, no signup, no API key. Everything in the Quickstart below works against it, fully offline.
+
+This plugin does two independent things, and you can use either on its own:
+
+1. **Build auth into your app.** Have Codex scaffold Ory login, registration, social sign-in, and permissions into the project you're working on, backed by the local stack. This is the Quickstart below — it needs nothing but Docker.
+2. **Govern the agent itself.** Authenticate Codex's own session and authorize every tool it runs against Ory Permissions, with a full audit trail. See [Agent security](#agent-security).
+
+If you're just exploring, do the Quickstart first.
+
 ## Prerequisites
 
 - [Codex](https://github.com/openai/codex) installed and signed in
@@ -59,11 +73,16 @@ That's the full Ory DX path. Stop here if you're just evaluating the plugin. Con
 
 Codex surfaces the skill catalog in `/skills` and auto-invokes by description. Ask Codex in natural language or invoke a skill directly:
 
+**Start here — add Ory auth to your app:**
+
 - **`ory-auth-setup`** — full project setup. Install the Ory CLI, create an Ory Network project (or use the local one), add Ory Elements, configure the SDK, build the auth pages, wire session middleware.
 - **`ory-login-flow`** — login, registration, recovery, verification, and settings pages with Ory Elements. Next.js App Router and React SPA variants.
 - **`ory-social-login`** — Google, GitHub, Apple, Microsoft, Discord, and other OIDC providers with Jsonnet data mappers.
 - **`ory-local-dev`** — drive the local Ory stack from within Codex to prototype and test without a remote project.
-- **`ory-permissions-onboarding`** — bootstrap permission tuples for built-in tools, switch between observe and enforce mode, troubleshoot denials.
+
+**Going further:**
+
+- **`ory-permissions-onboarding`** — bootstrap permissions for built-in tools, switch between observe and enforce mode, troubleshoot denials.
 - **`ory-build-integration`** — pull the runnable subset of an `ory/integrates` template (webhook / config / http-event) into your own app and wire it to your Ory project — no contribution/registry concerns.
 - **`ory-contribute-integration`** — author a brand-new integration as a contribution to `ory/integrates`, including `registry.entry.yaml`, the `Maintained by:` footer, DCO sign-off, and registry regeneration.
 - **`ory-e2b-sandbox`** — scaffold an [E2B](https://e2b.dev) sandbox template that boots with this plugin preinstalled and registered, so every sandbox session is gated by Ory auth, permissions, and tracing without any per-sandbox setup.
@@ -72,7 +91,7 @@ Codex surfaces the skill catalog in `/skills` and auto-invokes by description. A
 
 ### Ory MCP server
 
-Bundled and registered automatically. Exposes the Ory CLI and the Ory Network REST API as MCP tools so Codex can manage identities, OAuth2 clients, projects, permission tuples, and configuration without ever leaving the chat. Useful for seeding test data, verifying a scaffolded integration, or running one-off admin tasks.
+Bundled and registered automatically. Exposes the Ory CLI and the Ory Network REST API as MCP tools so Codex can manage identities, OAuth2 clients, projects, permissions, and configuration without ever leaving the chat. Useful for seeding test data, verifying a scaffolded integration, or running one-off admin tasks.
 
 ### Local Ory stack
 
@@ -86,16 +105,16 @@ ory-temporal-up   # start a local Temporal dev server (for ory-temporal-worker)
 
 Or via the CLI: `npx -y -p @ory/codex ory-codex local up | down`.
 
-`ory-local-up` brings up Ory Identities, OAuth2, and Permissions, plus a login UI on `:3000` and Jaeger on `:16686`, all reachable through `http://localhost:4000`. A test user identity is seeded and the credentials are printed for you. Use it to:
+`ory-local-up` runs a complete Ory on your laptop: the Ory APIs (Identities, OAuth2, Permissions) at `http://localhost:4000`, a login UI on `:3000`, and Jaeger (the trace viewer) on `:16686`. A test user identity is seeded and its credentials are printed for you. Use it to:
 
 - **Learn Ory hands-on** without signing up for a hosted project.
-- **Prototype** flows (login, social, MFA, recovery, permission tuples) against a real Ory backend.
+- **Prototype** flows (login, social, MFA, recovery, permissions) against a real Ory backend.
 - **Test** an auth integration end-to-end before pushing anything to a real environment.
 - **Develop** your application against the same identity, OAuth2, and permission surfaces you'll ship with.
 
 ## Pointing at a real Ory project
 
-The Quickstart uses the local stack. If you have a hosted [Ory Network](https://console.ory.sh) project, point the plugin at it with a single configure command. **The plugin requires `--oauth2-client-id` whenever `--project-url` is provided** — register the client first (see [Register the user OAuth2 client](#register-the-user-oauth2-client) below), then run:
+The Quickstart uses the local stack. If you have a hosted [Ory Network](https://console.ory.sh) project (Ory's managed cloud), point the plugin at it with a single configure command. **The plugin requires `--oauth2-client-id` whenever `--project-url` is provided** — register the client first (see [Register the user OAuth2 client](#register-the-user-oauth2-client) below), then run:
 
 ```bash
 npx -y -p @ory/codex ory-codex configure \
@@ -169,10 +188,10 @@ Headless / CI runs that already hold a session token can skip this entirely by s
 Once the plugin is pointed at an Ory project (local or hosted), Codex's session and every tool call can be governed by Ory.
 
 - **Authentication.** Two identities. The human at the keyboard (the **user**) authenticates interactively via Ory Identities when user login is enabled (`ORY_USER_LOGIN=true`, off by default — browser PKCE flow on first session, persisted token thereafter). The Codex process (the **agent**) gets its own OAuth2 identity, self-registered via [Dynamic Client Registration (RFC 7591)](https://datatracker.ietf.org/doc/html/rfc7591) on first run.
-- **Authorization.** Before any tool runs, the plugin checks [Ory Permissions](https://www.ory.com/docs/keto) (Zanzibar-style relation tuples) against the user's subject and blocks the call on `deny`. MCP tool calls additionally get a server-level check.
-- **Audit.** Every decision (allow, deny, fallback) is recorded as a structured trace span: NDJSON file output and/or OTLP/HTTP export to Jaeger, Honeycomb, Grafana, and similar collectors. The user → agent delegation is written to Ory as a relation tuple so *"agent X acting on behalf of user Y"* stays queryable after tokens expire.
+- **Authorization.** Before any tool runs, the plugin checks [Ory Permissions](https://www.ory.com/docs/keto) (Zanzibar-style relations) against the user's subject and blocks the call on `deny`. MCP tool calls additionally get a server-level check.
+- **Audit.** Every decision (allow, deny, fallback) is recorded as a structured trace span: NDJSON file output and/or OTLP/HTTP export to Jaeger, Honeycomb, Grafana, and similar collectors. The user → agent delegation is written to Ory as a relation so *"agent X acting on behalf of user Y"* stays queryable after tokens expire.
 
-The plugin is **fail-open** on its own infrastructure failures (network errors, rate limits, missing config), so enforcement is only as strong as your tuples — grant explicit `invoke` relations for the tools each user should be able to run.
+The plugin is **fail-open** on its own infrastructure failures (network errors, rate limits, missing config), so enforcement is only as strong as your permission grants — grant explicit `use` on the tools each user should be able to run.
 
 ### Enable enforcement
 
@@ -189,7 +208,7 @@ After install the plugin runs in **observe mode**: every tool call is checked ag
 
    `ORY_OAUTH2_CLIENT_ID` is required when `ORY_USER_LOGIN` is on: PKCE needs a public OAuth2 client registered with the four loopback redirect URIs (`http://127.0.0.1:47823..47826/callback`) to exchange the authorization code for a token. The local stack provisions one and prints the export in its `local up` banner; for a hosted Ory project see [Register the user OAuth2 client](#register-the-user-oauth2-client) for the exact CLI / Console steps. Headless / CI runs can skip the browser flow entirely by pre-supplying `ORY_USER_SESSION_TOKEN` instead.
 
-2. **Bootstrap tuples for the built-in tools.** One idempotent command grants the current user `use` on every tool Codex ships with (shell, apply_patch, …):
+2. **Bootstrap permissions for the built-in tools.** One idempotent command grants the current user `use` on every tool Codex ships with (shell, apply_patch, …):
 
    ```bash
    npx -y -p @ory/codex ory-codex permissions bootstrap
@@ -203,7 +222,7 @@ After install the plugin runs in **observe mode**: every tool call is checked ag
    npx -y -p @ory/codex ory-codex permissions status
    ```
 
-   Add tuples for any MCP server tools or custom commands by hand, or via the Ory MCP server from inside Codex (*"grant me use on the shell tool"*).
+   Add permissions for any MCP server tools or custom commands by hand, or via the Ory MCP server from inside Codex (*"grant me use on the shell tool"*).
 
 4. **Promote to enforce.** Once the observe-mode logs look right, switch over:
 
@@ -227,7 +246,7 @@ npx -y -p @ory/codex ory-codex status
 Highlights:
 
 - `agent status` — show the current persisted DCR identity for the agent.
-- `permissions observe` / `permissions enforce` — switch between "log denies, allow through" (the install default) and "block denies." `permissions bootstrap` writes `use` tuples for the harness's built-in tools so the promotion path doesn't require hand-writing relationships.
+- `permissions observe` / `permissions enforce` — switch between "log denies, allow through" (the install default) and "block denies." `permissions bootstrap` writes `use` permissions for the harness's built-in tools so the promotion path doesn't require hand-writing relations.
 - `configure --audit-only` — kill switch that disables Ory entirely (no auth, no permission checks; only audit logging of tool invocations). For phased rollouts, prefer `permissions observe` over `--audit-only`.
 - `local seed` / `local env` — reseed the test user, or print env vars for pointing other tools at the local stack.
 
