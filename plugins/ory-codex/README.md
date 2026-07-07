@@ -30,8 +30,8 @@ If you're just exploring, do the Quickstart first.
 No prior `npm install` required:
 
 ```bash
-npx @ory/codex install     # registers the Ory marketplace + plugin with `codex`
-npx @ory/codex uninstall   # removes both
+npx -y -p @ory/codex ory-codex install     # registers the Ory marketplace + plugin with `codex`
+npx -y -p @ory/codex ory-codex uninstall   # removes both
 ```
 
 Then confirm everything landed:
@@ -105,7 +105,7 @@ ory-temporal-up   # start a local Temporal dev server (for ory-temporal-worker)
 
 Or via the CLI: `npx -y -p @ory/codex ory-codex local up | down`.
 
-`ory-local-up` runs a complete Ory on your laptop: the Ory APIs (Identities, OAuth2, Permissions) at `http://localhost:4000`, a login UI on `:3000`, and Jaeger (the trace viewer) on `:16686`. A test user identity is seeded and its credentials are printed for you. Use it to:
+`ory-local-up` runs a complete Ory on your laptop: the Ory APIs (Identities, OAuth2, Permissions) at `http://localhost:4000`, a login UI on `:4455` (not :3000, to avoid Next.js port conflicts), and Jaeger (the trace viewer) on `:16686`. A test user identity is seeded and its credentials are printed for you. Use it to:
 
 - **Learn Ory hands-on** without signing up for a hosted project.
 - **Prototype** flows (login, social, MFA, recovery, permissions) against a real Ory backend.
@@ -252,10 +252,10 @@ Highlights:
 
 ## Troubleshooting
 
-- **`ory-local-up` fails.** Make sure Docker is running and ports `3000`, `4000`, `4100`, and `16686` are free.
+- **`ory-local-up` fails.** Make sure Docker is running and ports `4455` (login UI), `4000`, `4100`, and `16686` are free.
 - **PKCE login loops.** Clear persisted state with `npx -y -p @ory/codex ory-codex agent unregister` and retry.
 - **`npx` fetches an old version.** Force a fresh fetch: `npx -y -p @ory/codex@latest ory-codex …`.
-- **`npm install … ENOVERSIONS`.** If your `~/.npmrc` sets `min-release-age`, npm filters out package versions newer than that threshold. Override per-call with `npm_config_min_release_age=0 npx @ory/codex install`.
+- **`npm install … ENOVERSIONS`.** If your `~/.npmrc` sets `min-release-age`, npm filters out package versions newer than that threshold. Override per-call with `npm_config_min_release_age=0 npx -y -p @ory/codex ory-codex install`.
 - **`codex doctor` reports `ory-mcp-server is not resolvable`.** The bundled MCP server resolves via `npx -y -p @ory/mcp-server` on demand — make sure `npm`/`npx` is on PATH. The first session start fetches the server tarball; subsequent sessions reuse the cache.
 - **Need more signal.** Set `ORY_AGENT_DEBUG=true` and `ORY_AGENT_LOG_FILE=/tmp/ory.log` to capture structured logs.
 
