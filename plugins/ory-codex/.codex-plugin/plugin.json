@@ -1,6 +1,6 @@
 {
   "name": "ory-codex",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "Ory authentication, authorization, and audit for every Codex tool call.",
   "author": {
     "name": "Ory",
@@ -19,6 +19,7 @@
     "zanzibar"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks.json",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Ory",
