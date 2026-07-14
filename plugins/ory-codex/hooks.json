@@ -3,37 +3,37 @@
     "SessionStart": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ],
     "PreToolUse": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ],
     "PostToolUse": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ],
     "PermissionRequest": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ],
     "UserPromptSubmit": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ],
     "Stop": [
       {
         "type": "command",
-        "command": "npx -y -p @ory/codex@0.13.0 ory-codex-hook"
+        "command": "npx -y -p @ory/codex@0.13.1 ory-codex-hook"
       }
     ]
   }

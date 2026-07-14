@@ -136,7 +136,7 @@ The local stack runs a complete Ory on your laptop: the Ory APIs at `http://loca
 
 - **`local up` fails** — make sure Docker is running and ports `4000`, `4100`, `4455`, and `16686` are free.
 - **Browser sign-in loops** — reset with `ory-codex agent unregister` and try again.
-- **`npx` grabbed an old version** — force the latest: `npx -y -p @ory/codex@latest ory-codex …`.
+- **Install ran but never asked how to connect** — you're almost certainly on a stale `npx` cache. `npx -p @ory/codex` (no version pin) reuses a previously-downloaded copy instead of re-resolving to the latest, so an older CLI whose install predates the setup wizard can run while you believe you're on the current release. The install banner prints the running version; confirm it with `npx -y -p @ory/codex ory-codex version`. To force the current release, clear the cache and reinstall: `rm -rf ~/.npm/_npx` then `npx -y -p @ory/codex ory-codex install`. Pinning an exact version (`@ory/codex@<version>`) also bypasses the cached copy.
 - **`npm install … ENOVERSIONS`** — if your `~/.npmrc` sets `min-release-age`, npm hides versions newer than that. Override per-call: `npm_config_min_release_age=0 npx -y -p @ory/codex ory-codex install`.
 - **`codex doctor` says `ory-mcp-server is not resolvable`** — the bundled tool server is fetched on demand via `npx`, so make sure `npm`/`npx` is on your PATH. The first session downloads it; later ones reuse the cache.
 - **Want to see what's happening** — `npx -y -p @ory/codex ory-codex status` for a snapshot, `npx -y -p @ory/codex ory-codex watch` for the live trace stream, or set `ORY_AGENT_DEBUG=true` for a verbose log. Traces and logs live under `~/.config/ory-agent-plugins/codex/` (see [See what's happening](#see-whats-happening)).
