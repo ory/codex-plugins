@@ -5,7 +5,7 @@
       "args": [
         "-y",
         "-p",
-        "@ory/mcp-server@0.13.4",
+        "@ory/mcp-server@0.13.5",
         "ory-mcp-server"
       ]
     }

@@ -1,6 +1,6 @@
 {
   "name": "ory-codex",
-  "version": "0.13.4",
+  "version": "0.13.5",
   "description": "Ory authentication, authorization, and audit for every Codex tool call.",
   "author": {
     "name": "Ory",
