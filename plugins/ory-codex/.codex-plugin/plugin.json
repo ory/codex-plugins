@@ -1,6 +1,6 @@
 {
   "name": "ory-codex",
-  "version": "0.14.0",
+  "version": "1.0.0",
   "description": "Ory authentication, authorization, and audit for every Codex tool call.",
   "author": {
     "name": "Ory",
@@ -24,7 +24,7 @@
   "interface": {
     "displayName": "Ory",
     "shortDescription": "Authn/authz and audit for every Codex tool call",
-    "longDescription": "Adds Ory Identities, Permissions, and audit logging to Codex. Auth gate on session start, per-tool permission checks before every invocation, structured trace spans on every decision, and a bundled Ory MCP server for managing identities, OAuth2 clients, and permission tuples from inside Codex.",
+    "longDescription": "Adds Ory Identities, Permissions, and audit logging to Codex. Auth gate on session start, per-tool permission checks before every invocation, privacy-safe activity events for every decision, and a bundled Ory MCP server for managing identities, OAuth2 clients, and permission tuples from inside Codex.",
     "developerName": "Ory",
     "category": "Security",
     "capabilities": [

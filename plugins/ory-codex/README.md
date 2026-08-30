@@ -2,9 +2,12 @@
 
 Security and developer experience for [Codex](https://github.com/openai/codex), powered by [Ory](https://ory.com).
 
-**Security.** Codex runs real actions on your machine — editing files, running shell commands, calling APIs. The plugin gives every session a verifiable identity (you sign in once; Codex and any sub-agents it spawns each get their own), checks every tool call against permissions you control, and records each decision as an audit trace you can ship to your observability stack. It starts in watch mode so nothing is blocked on day one, and if Ory is ever unreachable it steps aside rather than locking you out.
+Codex runs real actions on your machine — editing files, running shell commands, calling APIs. This plugin gives those actions an identity, a permission check, and an audit trail.
 
-**Developer experience.** A single command installs the plugin and walks you through connecting — choose Ory Network, a local Docker stack, or audit-only, and it wires up the project, sign-in client, login, and permissions for you. It also helps you build Ory into your own app: ask in plain language to scaffold login, registration, and recovery pages, run a local Ory, or manage identities and permissions through the bundled MCP server.
+One command installs two independent halves:
+
+- **Developer experience** — the Ory skill catalog, the local Ory dev stack, a bundled Ory tool server, and activity logging. No account, no keys, nothing to configure: it works the moment it's installed.
+- **Ory Agent Security** — browser sign-in, brokered permission checks before tool calls, and the delegation trail. Opt-in connection details from the [Ory Console](https://console.ory.sh) switch it on, and it takes nothing away from the half above. See [Connect to Ory Agent Security](#connect-to-ory-agent-security).
 
 ## What you'll need
 
@@ -15,134 +18,136 @@ Security and developer experience for [Codex](https://github.com/openai/codex), 
 
 ## Get started
 
-Run one command. It installs the plugin and walks you through connecting:
+Run one command:
 
 ```bash
 npx -y -p @ory/codex ory-codex install
 ```
 
-This registers the Ory plugin with Codex (hooks, skills, and a bundled Ory tool server) and then opens a guided setup **in your browser** where you pick how to connect — the default takes just a click:
-
-- **Ory Network** *(default)* — sign in, or create a free account, in your browser. The project, keys, permissions, and login are all set up for you. Nothing to configure by hand.
-- **Local** — run a complete Ory on your laptop with Docker. No account, no signup, no keys. Great for trying it out.
-- **Audit-only** — skip Ory entirely and just log what Codex does.
-
-> No browser available (CI, SSH, headless)? The same walkthrough runs right in your terminal instead — or force it with `--no-web`.
-
-That's it. Confirm everything landed with:
+This registers the Ory plugin with Codex (hooks, skills, and a bundled Ory tool server). Confirm everything landed with:
 
 ```bash
 npx -y -p @ory/codex ory-codex status
 ```
 
-`status` is your one-stop check: what's configured, who's signed in, which tools are covered by permissions, and recent activity. Anything not set up yet shows as `(unset)`.
+`status` is your one-stop check: what's configured, who's signed in, which tools are covered by permissions, and recent activity. Until you connect Agent Security, the identity and permission rows say so and name what's missing.
 
-> **First launch: trust the Ory hooks.** Codex treats a freshly installed plugin's hooks as untrusted, so your first Codex session asks you to review and trust them. Sign-in and per-tool checks only start running once you do. In the TUI, that first check kicks in on your opening turn.
+> **First launch: trust the Ory hooks.** Codex treats a freshly installed plugin's hooks as untrusted, so your first Codex session asks you to review and trust them. Activity logging starts once you do; sign-in and per-tool checks only run after you connect to Agent Security. In the TUI, that first check kicks in on your opening turn. If Codex consumed its one-shot session event before the plugin became trusted, the opening prompt starts authentication instead.
 
-Re-run install with `--reconfigure` to change your connection later, or `--no-configure` to skip the wizard and connect by hand.
+## Skills and commands
+
+Installing the plugin drops the full Ory playbook catalog into Codex. **Skills** are model-invoked — say what you want in plain language, or pick one from the `/skills` menu.
+
+| Skill | What it does for you |
+|---|---|
+| `ory-auth-setup` | Adds a complete auth system to your app — login, registration, recovery, verification, settings — on [Ory Elements](https://github.com/ory/elements) |
+| `ory-login-flow` | Builds just the pages, wired to Ory's self-service flows |
+| `ory-social-login` | "Sign in with…" for Google, GitHub, Apple, Microsoft, Discord, Slack, GitLab, Facebook |
+| `ory-local-dev` | Develops and tests login/permission flows against a local Ory — no project, no account, offline |
+| `ory-permissions-onboarding` | Walks a fresh install from observe mode to enforced per-tool permissions without getting blocked |
+| `ory-build-agent` | Drops `@ory/argus` into an agent *you* own — Claude Agent SDK, OpenAI Agents, Mastra, Vercel AI, LangGraph/PydanticAI |
+| `ory-build-integration` | Wires Ory into your app: Action webhooks, JWT validation at a gateway, live event streams |
+| `ory-contribute-integration` | Authors and submits an integration to the public `ory/integrates` registry |
+| `ory-e2b-sandbox` | Scaffolds an E2B sandbox template that boots with this plugin preinstalled |
+| `ory-temporal-worker` | Scaffolds a Temporal TypeScript worker where every Activity is authenticated, authorized, and audited |
+
+The local stack has its own playbooks — ask for them by name:
+
+| Command | What it does |
+|---|---|
+| `ory-local-up` | Starts a local Ory (Identities, OAuth2, Permissions) in Docker and seeds a test user — it prints the email + password to sign in with |
+| `ory-local-down` | Stops it, keeping your data volumes |
+| `ory-temporal-up` | Starts a local Temporal dev server for the `ory-temporal-worker` scaffold |
+
+The local stack runs entirely on your laptop: Ory APIs at `http://localhost:4000`, a login UI on `:4455` (not `:3000`, to dodge Next.js port clashes), and the Ory Console on `:4100`.
+
+A built-in **Ory tool server** rounds it out — Codex can manage identities, projects, and permissions straight from chat.
+
+So: ask Codex *"add Ory login to this app"* and it scaffolds the pages, starts a local Ory, and wires them together.
 
 ## What you get
 
-Once connected, every tool Codex runs is governed by Ory — three things happen automatically:
+Out of the box, every tool Codex runs produces a privacy-safe structured activity event in the unified local log.
 
-- **Who's driving.** You sign in once in your browser (a standard secure browser sign-in — no tokens to copy around). Codex itself registers its own identity automatically the first time it runs. The "who acted on whose behalf" trail stays queryable later.
-- **What it's allowed to do.** Before a tool runs, Ory checks whether it's permitted. It starts in **watch mode** — nothing is blocked, you just *see* what would be — so it never gets in your way on day one.
-- **A record of everything.** Every decision (allowed, denied, skipped) is logged as a trace you can send to Jaeger, Honeycomb, Grafana, or just a file.
+Once you connect to Ory Agent Security, two more things happen automatically:
 
-If Ory is ever unreachable, the plugin gets out of the way and lets Codex keep working — so it can't lock you out. That also means enforcement is only as strong as the permissions you grant.
+- **Who's driving.** You sign in once in your browser; Codex (and any sub-agents it spawns) each get their own identity. No tokens to copy around, and the "who acted on whose behalf" trail stays queryable later.
+- **What it's allowed to do.** Before a tool runs, Ory checks whether it's permitted. It starts in **observe mode** — nothing is blocked, you just *see* what would be — so it never gets in your way on day one.
+
+If Ory is ever unreachable, the plugin gets out of the way and lets Codex keep working — so it can't lock you out.
 
 ### See what's happening
 
-Everything the plugin does is observable out of the box — no configuration required:
+Everything the plugin does is observable out of the box:
 
-- **Status at a glance.** `npx -y -p @ory/codex ory-codex status` shows what's configured, who's signed in, how many built-in tools your permissions cover, and the most recent tool-call activity.
-- **Live dashboard.** `npx -y -p @ory/codex ory-codex dashboard` opens the same picture in your browser — configuration, identities, permission coverage, Ory service health, and the latest tool-call activity, all refreshing live. From there you can flip **enforcement** on or off, toggle **user login**, and use **Change stack** to reconnect to a different Ory — no CLI required.
-- **Live traces.** Every tool call is recorded as an OpenTelemetry-style span. Watch them stream as the agent works:
+- **Activity log.** Privacy-safe activity is always appended to `~/.config/ory-agent-plugins/codex/ory-agent-debug.log`. View events, decisions, and errors live with:
 
   ```bash
   npx -y -p @ory/codex ory-codex watch
   ```
 
-  Spans are also written to `~/.config/ory-agent-plugins/codex/ory-agent-trace.ndjson` (NDJSON, one span per line) — tail that file, or point `OTEL_EXPORTER_OTLP_ENDPOINT` at a collector to ship them straight to Jaeger, Honeycomb, or Grafana.
-- **Debug log.** For a verbose play-by-play, set `ORY_AGENT_DEBUG=true`; structured logs land in `~/.config/ory-agent-plugins/codex/ory-agent-debug.log`.
+  Set `ORY_AGENT_LOG_FILE` to override the path; set it empty to disable file persistence.
+- **Live debug.** Launch Codex with `ORY_AGENT_DEBUG=true` to add verbose local diagnostics, including raw shell commands, to the watched log and stderr. Secrets are recursively redacted; pass `watch --json` for NDJSON.
 
 ### Ready to enforce?
 
-When the watch-mode logs look right, turn on blocking with one command (setup already granted you the built-in tools):
+Once connected, the deny posture lives on the Ory project: when the observe-mode activity looks right, an admin promotes it to **enforce** in the **Ory Console** (Agent Security). Every session reads that posture live, so nothing has to be reinstalled.
 
 ```bash
-npx -y -p @ory/codex ory-codex permissions enforce
+npx -y -p @ory/codex ory-codex permissions   # what the project grants, and the live mode
 ```
 
-Now a denied tool is actually blocked and Codex shows why. Go back to watch mode anytime with `permissions observe`. Prefer clicking? The dashboard has the same **Enforce** switch — flip it on, or back to watch mode, without touching the CLI. Use `permissions status` to see what's covered and `permissions bootstrap` to (re-)grant the built-in tools — or just ask Codex in chat, e.g. *"grant me use of the shell tool."*
+Then a denied tool is actually blocked and Codex shows why.
 
-## Also: add login to your own app
+## Connect to Ory Agent Security
 
-Beyond securing Codex, the plugin helps you build Ory into whatever you're working on. Ask Codex *"add Ory login to this app"* — or pick `ory-auth-setup` from the `/skills` menu — and it scaffolds the login, registration, recovery, and settings pages (using [Ory Elements](https://github.com/ory/elements)) wired to a local Ory, so no signup or keys are needed. Start that local Ory with the `ory-local-up` skill (it prints a test email + password to sign in with) and tear it down with `ory-local-down`.
+Copy the connection details from the [Ory Console](https://console.ory.sh) under **Agent Security**:
 
-Bundled **skills** (ask in plain language, or pick from `/skills`) cover more: `ory-auth-setup`, `ory-login-flow`, `ory-social-login` (Google, GitHub, Apple…), `ory-permissions-onboarding`, and playbooks for wiring Ory into your own agents, E2B sandboxes, or Temporal workers. A built-in **Ory tool server** lets Codex manage identities, projects, and permissions straight from chat.
-
-## Configure by hand (CI / advanced)
-
-The guided setup covers most people. For scripted or CI setups, or to point at an existing Ory Network project, connect directly. Settings are saved to `~/.config/ory-agent-plugins/config.json` and shared across all your Ory agent plugins; environment variables win when both are set.
+| Value | Flag | Environment variable |
+|---|---|---|
+| Project URL | `--project-url` | `ORY_PROJECT_URL` |
+| Agent Security URL | `--agent-security-url` | `ORY_AGENT_SECURITY_URL` |
+| Sign-in client id override (default `ory-agent-security-login`) | `--oauth2-client-id` | `ORY_OAUTH2_CLIENT_ID` |
 
 ```bash
 npx -y -p @ory/codex ory-codex configure \
   --project-url https://<slug>.projects.oryapis.com \
-  --oauth2-client-id <sign-in client id>
+  --agent-security-url https://agents.console.ory.com
 ```
 
-Codex's own identity registers itself automatically on first run — nothing to create. The `--oauth2-client-id` is the one piece browser sign-in needs; the guided setup makes it for you, or see below to do it by hand. For logging-only with no checks, use `--audit-only`.
+`install` accepts the same flags, so you can register the plugin **and** connect in one shot (`install --project-url <URL> --agent-security-url <URL>`). The login client defaults to `ory-agent-security-login`; custom deployments can override it with `--oauth2-client-id`. Existing configurations fall back to the project URL when the Agent Security URL is unset. To turn sign-in and checks back off later, use `configure --disconnect`.
 
-<details>
-<summary>Create the sign-in client by hand</summary>
+**Ory Network or OEL.** Either works. For an Ory Network project the URL is `https://<slug>.projects.oryapis.com`; for a self-hosted **Ory Enterprise License** deployment, point `--project-url` at that deployment's base URL and use the sign-in client id from its Agent Security configuration. Everything downstream — sign-in, checks, delegation — is identical.
 
-The guided setup normally does this. To do it yourself, create a **public** OAuth2 client (no secret) listing all four loopback URLs — the plugin tries each in turn at runtime so sign-in survives a busy port, and Ory only accepts a callback on a URL you registered:
+**There is nothing else for you to create.** The sign-in client, the permission model, the per-tool grants and blocks, and the observe/enforce posture are all provisioned in the Console by someone with project access. At runtime the plugin only *reads* permissions — it has no write path into your project, which is why installing it needs no workspace privilege. Each Codex session registers its own identity automatically on first use.
 
-```bash
-ory create oauth2-client --project <project-id> \
-  --name "Ory Agent Security · user login (PKCE)" \
-  --grant-type authorization_code,refresh_token \
-  --response-type code \
-  --scope openid,offline_access \
-  --token-endpoint-auth-method none \
-  --redirect-uri http://127.0.0.1:47823/callback \
-  --redirect-uri http://127.0.0.1:47824/callback \
-  --redirect-uri http://127.0.0.1:47825/callback \
-  --redirect-uri http://127.0.0.1:47826/callback
-```
+Sign-in runs at the start of every session and never blocks — a declined, skipped, or timed-out login simply leaves that session without a user identity.
 
-…or in the [Ory Console](https://console.ory.sh) under *OAuth2* → *Clients* → *Create client* (pick "Public client", set "Authorization Code" + "Refresh Token" grants, scopes `openid offline_access`, paste the four URLs above). Pass the resulting id to `configure --oauth2-client-id`. Running headless with a session token already? Set `ORY_USER_SESSION_TOKEN` and skip the browser step entirely.
-
-</details>
-
-With nothing configured, the plugin still loads and runs in **pass-through mode**: skills, commands, and logging work, but no checks run and nothing is blocked. Perfectly fine if you only want the app-building features.
+Settings are saved to `~/.config/ory-agent-plugins/config.json` and shared across all your Ory agent plugins; environment variables win when both are set. Running headless with an OAuth2 access token already? Set `ORY_USER_OAUTH2_TOKEN` and the browser step is skipped entirely.
 
 ## Commands
 
 ```
-ory-codex install | uninstall        Install/remove; --reconfigure re-runs setup, --no-web forces the terminal wizard, --no-configure skips it
+ory-codex install | uninstall        Install (add --project-url to also connect Agent Security) / remove
 ory-codex status                     Show configuration, identities, permission coverage, recent activity
-ory-codex dashboard                  Open the live browser dashboard (status + service health + Change stack)
-ory-codex watch                      Tail the live trace stream (OTel spans)
-ory-codex permissions <cmd>          status | bootstrap | observe (watch) | enforce (block)
-ory-codex configure <flags>          Point at a project by hand (--project-url, --oauth2-client-id, --audit-only)
+ory-codex permissions <cmd>          status  (read-only; grants + posture live in the Ory Console)
+ory-codex configure <flags>          Connect a project (--project-url) or --disconnect
 ory-codex agent <status|unregister>  Manage Codex's own auto-created identity
 ory-codex local <up|down|status|…>   Run / manage a local Ory in Docker
+ory-codex version                    Print plugin, core, and Node versions (--json for machine-readable)
 ```
 
 All prefixed with `npx -y -p @ory/codex`.
 
-The local stack runs a complete Ory on your laptop: the Ory APIs at `http://localhost:4000`, a login UI on `:4455` (not :3000, to avoid Next.js port conflicts), the Ory Console on `:4100`, and Jaeger (the trace viewer) on `:16686`.
+The local stack runs a complete Ory on your laptop: the Ory APIs at `http://localhost:4000`, a login UI on `:4455` (not :3000, to avoid Next.js port conflicts), and the Ory Console on `:4100`.
 
 ## Troubleshooting
 
 - **`local up` fails** — make sure Docker is running and ports `4000`, `4100`, `4455`, and `16686` are free.
-- **Browser sign-in loops** — reset with `ory-codex agent unregister` and try again.
-- **Install ran but never asked how to connect** — you're almost certainly on a stale `npx` cache. `npx -p @ory/codex` (no version pin) reuses a previously-downloaded copy instead of re-resolving to the latest, so an older CLI whose install predates the setup wizard can run while you believe you're on the current release. The install banner prints the running version; confirm it with `npx -y -p @ory/codex ory-codex version`. To force the current release, clear the cache and reinstall: `rm -rf ~/.npm/_npx` then `npx -y -p @ory/codex ory-codex install`. Pinning an exact version (`@ory/codex@<version>`) also bypasses the cached copy.
+- **Browser sign-in loops** (after connecting) — reset with `ory-codex agent unregister` and try again.
+- **Running an older CLI than expected** — `npx -p @ory/codex` (no version pin) reuses a previously-downloaded copy instead of re-resolving to the latest. The install banner prints the running version; confirm it with `npx -y -p @ory/codex ory-codex version`. To force the current release, clear the cache and reinstall: `rm -rf ~/.npm/_npx` then `npx -y -p @ory/codex ory-codex install`. Pinning an exact version (`@ory/codex@<version>`) also bypasses the cached copy.
 - **`npm install … ENOVERSIONS`** — if your `~/.npmrc` sets `min-release-age`, npm hides versions newer than that. Override per-call: `npm_config_min_release_age=0 npx -y -p @ory/codex ory-codex install`.
 - **`codex doctor` says `ory-mcp-server is not resolvable`** — the bundled tool server is fetched on demand via `npx`, so make sure `npm`/`npx` is on your PATH. The first session downloads it; later ones reuse the cache.
-- **Want to see what's happening** — `npx -y -p @ory/codex ory-codex status` for a snapshot, `npx -y -p @ory/codex ory-codex watch` for the live trace stream, or set `ORY_AGENT_DEBUG=true` for a verbose log. Traces and logs live under `~/.config/ory-agent-plugins/codex/` (see [See what's happening](#see-whats-happening)).
 
 ## Learn more
 
