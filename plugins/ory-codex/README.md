@@ -119,7 +119,7 @@ npx -y -p @ory/codex ory-codex configure \
 
 **Ory Network or OEL.** Either works. For an Ory Network project the URL is `https://<slug>.projects.oryapis.com`; for a self-hosted **Ory Enterprise License** deployment, point `--project-url` at that deployment's base URL and use the sign-in client id from its Agent Security configuration. Everything downstream — sign-in, checks, delegation — is identical.
 
-**There is nothing else for you to create.** The sign-in client, permission model, native-tool blocks, MCP grants, and observe/enforce posture are provisioned in the Console by someone with project access. At runtime the plugin only *reads* permissions, so installing it needs no workspace privilege. Each Codex session registers its own identity automatically on first use.
+**There is nothing else for you to create.** The sign-in client, permission model, native-tool blocks, MCP server access, and observe/enforce posture are provisioned in the Console by someone with project access. At session start the plugin loads or enrolls Codex's Talos runtime credential in the OS credential store; tool paths only read it. Installing needs no workspace privilege.
 
 Sign-in runs at the start of every session and never blocks — a declined, skipped, or timed-out login simply leaves that session without a user identity.
 
@@ -132,7 +132,7 @@ ory-codex install | uninstall        Install (add --project-url to also connect 
 ory-codex status                     Show configuration, identities, native tool access, recent activity
 ory-codex permissions <cmd>          status  (read-only; blocks + posture live in the Ory Console)
 ory-codex configure <flags>          Connect a project (--project-url) or --disconnect
-ory-codex agent <status|unregister>  Manage Codex's own auto-created identity
+ory-codex agent <status|unregister>  Inspect runtime status / clear legacy OAuth state
 ory-codex local <up|down|status|…>   Run / manage a local Ory in Docker
 ory-codex version                    Print plugin, core, and Node versions (--json for machine-readable)
 ```
@@ -144,7 +144,7 @@ The local stack runs a complete Ory on your laptop: the Ory APIs at `http://loca
 ## Troubleshooting
 
 - **`local up` fails** — make sure Docker is running and ports `4000`, `4100`, `4455`, and `16686` are free.
-- **Browser sign-in loops** (after connecting) — reset with `ory-codex agent unregister` and try again.
+- **Browser sign-in loops** (after connecting) — confirm the reserved login client has all four documented loopback redirect URIs; `agent unregister` only clears legacy agent OAuth state.
 - **Running an older CLI than expected** — `npx -p @ory/codex` (no version pin) reuses a previously-downloaded copy instead of re-resolving to the latest. The install banner prints the running version; confirm it with `npx -y -p @ory/codex ory-codex version`. To force the current release, clear the cache and reinstall: `rm -rf ~/.npm/_npx` then `npx -y -p @ory/codex ory-codex install`. Pinning an exact version (`@ory/codex@<version>`) also bypasses the cached copy.
 - **`npm install … ENOVERSIONS`** — if your `~/.npmrc` sets `min-release-age`, npm hides versions newer than that. Override per-call: `npm_config_min_release_age=0 npx -y -p @ory/codex ory-codex install`.
 - **`codex doctor` says `ory-mcp-server is not resolvable`** — the bundled tool server is fetched on demand via `npx`, so make sure `npm`/`npx` is on your PATH. The first session downloads it; later ones reuse the cache.
