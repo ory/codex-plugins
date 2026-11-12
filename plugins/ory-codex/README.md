@@ -12,9 +12,11 @@ One command installs two independent halves:
 ## What you'll need
 
 - [Codex](https://github.com/openai/codex), installed and signed in
+<!-- BEGIN GENERATED requirements -->
 - Node.js **22 or newer**
 - [Docker](https://docs.docker.com/get-docker/) — only if you want to run Ory locally
 - macOS or Linux (Windows works via WSL2)
+<!-- END GENERATED requirements -->
 
 ## Get started
 
@@ -72,7 +74,7 @@ Out of the box, every tool Codex runs produces a privacy-safe structured activit
 Once you connect to Ory Agent Security, two more things happen automatically:
 
 - **Who's driving.** You sign in once in your browser; Codex (and any sub-agents it spawns) each get their own identity. No tokens to copy around, and the "who acted on whose behalf" trail stays queryable later.
-- **What it's allowed to do.** Before a tool runs, Ory checks whether it's permitted. It starts in **observe mode** — nothing is blocked, you just *see* what would be — so it never gets in your way on day one.
+- **What it's allowed to do.** Before a tool runs, Ory checks whether it's permitted. It starts in **observe mode** — nothing is blocked, you just *see* what would be — so it never gets in your way on day one. In observe mode, Codex still shows its own approval prompt for a tool Ory would deny.
 
 If Ory is ever unreachable, the plugin gets out of the way and lets Codex keep working — so it can't lock you out.
 
@@ -101,6 +103,7 @@ Then a denied tool is actually blocked and Codex shows why.
 
 ## Connect to Ory Agent Security
 
+<!-- BEGIN GENERATED connect -->
 Copy the connection details from the [Ory Console](https://console.ory.sh) under **Agent Security**:
 
 | Value | Flag | Environment variable |
@@ -123,7 +126,10 @@ npx -y -p @ory/codex ory-codex configure \
 
 Sign-in runs at the start of every session and never blocks — a declined, skipped, or timed-out login simply leaves that session without a user identity.
 
+When a login is declined, times out, or fails, Codex shows a warning that sign-in did not complete (and tells the model, so it can explain a later denial).
+
 Settings are saved to `~/.config/ory-agent-plugins/config.json` and shared across all your Ory agent plugins; environment variables win when both are set. Running headless with an OAuth2 access token already? Set `ORY_USER_OAUTH2_TOKEN` and the browser step is skipped entirely.
+<!-- END GENERATED connect -->
 
 ## Commands
 
@@ -143,7 +149,7 @@ The local stack runs a complete Ory on your laptop: the Ory APIs at `http://loca
 
 ## Troubleshooting
 
-- **`local up` fails** — make sure Docker is running and ports `4000`, `4100`, `4455`, and `16686` are free.
+- **`local up` fails** — <!-- BEGIN GENERATED local-stack-ports -->make sure Docker is running and ports `4000`, `4100`, and `4455` are free.<!-- END GENERATED local-stack-ports -->
 - **Browser sign-in loops** (after connecting) — confirm the reserved login client has all four documented loopback redirect URIs; `agent unregister` only clears legacy agent OAuth state.
 - **Running an older CLI than expected** — `npx -p @ory/codex` (no version pin) reuses a previously-downloaded copy instead of re-resolving to the latest. The install banner prints the running version; confirm it with `npx -y -p @ory/codex ory-codex version`. To force the current release, clear the cache and reinstall: `rm -rf ~/.npm/_npx` then `npx -y -p @ory/codex ory-codex install`. Pinning an exact version (`@ory/codex@<version>`) also bypasses the cached copy.
 - **`npm install … ENOVERSIONS`** — if your `~/.npmrc` sets `min-release-age`, npm hides versions newer than that. Override per-call: `npm_config_min_release_age=0 npx -y -p @ory/codex ory-codex install`.
@@ -151,7 +157,9 @@ The local stack runs a complete Ory on your laptop: the Ory APIs at `http://loca
 
 ## Learn more
 
+<!-- BEGIN GENERATED ory-links -->
 - [Ory documentation](https://www.ory.com/docs/) · [Ory Console](https://console.ory.sh) · [Ory Elements](https://github.com/ory/elements)
+<!-- END GENERATED ory-links -->
 - [Codex documentation](https://github.com/openai/codex)
 
 ## License
